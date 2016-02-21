@@ -1,8 +1,6 @@
 package com.chowculator.etcd.restclient
 
 import groovy.json.JsonBuilder
-import groovy.json.JsonSlurper
-import org.junit.Test
 import spock.lang.Specification
 
 
@@ -28,9 +26,9 @@ class RestClientSpec extends Specification {
 
     def "should get object"() {
         setup:
-        def httpClient = Mock(HttpClient)
-        httpClient.get("testurl") >> new ByteArrayInputStream(new JsonBuilder(testBaseEntity1).toString().bytes)
-        def restTemplate = new RestTemplate(httpClient)
+        def client = Mock(JsonHttpClient)
+        client.get("testurl") >> new ByteArrayInputStream(new JsonBuilder(testBaseEntity1).toString().bytes)
+        def restTemplate = new RestTemplate(client)
 
         when:
         TestBaseEntity result = restTemplate.getForObject("testurl", TestBaseEntity)
@@ -41,10 +39,10 @@ class RestClientSpec extends Specification {
 
     def "should get objects"() {
         setup:
-        def httpClient = Mock(HttpClient)
+        def client = Mock(JsonHttpClient)
         def bytes = new JsonBuilder([testBaseEntity1, testBaseEntity2]).toString().bytes
-        httpClient.get("testurl") >> new ByteArrayInputStream(bytes)
-        def restTemplate = new RestTemplate(httpClient)
+        client.get("testurl") >> new ByteArrayInputStream(bytes)
+        def restTemplate = new RestTemplate(client)
 
         when:
         List<TestBaseEntity> results = restTemplate.getForObjects("testurl", TestBaseEntity)

@@ -1,30 +1,33 @@
 package com.chowculator.etcd.restclient
 
 import groovy.json.JsonSlurper
-import org.apache.http.client.fluent.Request
 
 class RestTemplate {
-    private final HttpClient httpClient
+    private final JsonHttpClient client
 
-    RestTemplate(HttpClient httpClient) {
-        this.httpClient = httpClient
+    RestTemplate() {
+        this.client  = new JsonHttpClient()
     }
 
-    public <T> T getForObject(String url, Class<T> c) {
-        def object = new JsonSlurper().parse(httpClient.get(url))
-        if(object != null) {
-            assert object instanceof Map: "Object returned is not a map, maybe getForObjects?"
-            return c.newInstance(object)
+    RestTemplate(JsonHttpClient client) {
+        this.client = client
+    }
+
+    private static <T> T parseJsonResponseObject(InputStream resp, Class<T> c){
+        def o = new JsonSlurper().parse(resp)
+        if(o != null) {
+            assert o instanceof Map : "Response is not a valid object"
+            return c.newInstance(o)
         }
         null
     }
 
-    public <T> List<T> getForObjects(String path, Class<T> c) {
-        def object = new JsonSlurper().parse(httpClient.get(path))
-        if(object != null) {
-            assert object instanceof List: "Object returned is not a list, maybe getForObject?"
-            def l = []
-            object.forEach {
+    private static <T> List<T> parseJsonResponseArray(InputStream resp, Class<T> c) {
+        def o = new JsonSlurper().parse(resp)
+        if(o != null) {
+            assert o instanceof Map : "Response is not a valid array"
+            def l =[]
+            o.forEach {
                 if(it != null && it instanceof Map) {
                     l.add(c.newInstance(it))
                 } else {
@@ -34,5 +37,25 @@ class RestTemplate {
             return l
         }
         null
+    }
+
+    public <T> T getForObject(String url, Class<T> c) {
+        parseJsonResponseObject(client.get(url), c)
+    }
+
+    public <T> List<T> getForObjects(String url, Class<T> c) {
+        parseJsonResponseArray(client.get(url), c)
+    }
+
+    public <T> T postForObject(String url, Class<T> c, Object entity) {
+        parseJsonResponseObject(client.post(url, entity), c)
+    }
+
+    public <T> T putForObject(String url, Class<T> c, Object entity) {
+        parseJsonResponseObject(client.put(url, entity), c)
+    }
+
+    public <T> T deleteForObject(String url, Class<T> c) {
+        parseJsonResponseObject(client.delete(url), c)
     }
 }
